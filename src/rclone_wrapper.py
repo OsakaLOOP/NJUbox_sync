@@ -23,26 +23,19 @@ class RcloneWrapper:
 
         logging.info(f"Rclone uploading: {local_path} -> {remote_dir}")
 
-        # Hide console window on Windows
-        startupinfo = None
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
         try:
-            # Use subprocess.run for better control and output capturing if needed
+            # Use subprocess.run without capturing output to allow direct console access
+            # and prevent pipe buffer deadlocks with large --progress output.
             result = subprocess.run(
-                cmd,
-                startupinfo=startupinfo,
-                capture_output=True,
-                text=True
+                cmd
             )
 
             if result.returncode == 0:
                 return True
             else:
                 logging.error(f"Rclone failed with code {result.returncode}")
-                logging.error(f"Stderr: {result.stderr}")
+                # Stderr is not captured, so we direct the user to look at the console
+                logging.error("Check console output for error details.")
                 return False
         except FileNotFoundError:
             logging.error("Rclone executable not found in PATH.")

@@ -49,7 +49,7 @@ def process_file(file_path: Path, config, seafile, rclone):
             f.write(f"{link}?dl=1")
         if col_path:
             with open(col_path, "w", encoding='utf-8') as f:
-            f.write(f"{link}?dl=1")
+                f.write(f"{link}?dl=1")
         logging.info(f"Generated STRM: {strm_path}")
     except Exception as e:
         logging.error(f"Failed to write STRM: {e}")
