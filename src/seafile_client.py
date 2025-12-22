@@ -10,7 +10,7 @@ class SeafileClient:
 
     def get_share_link(self, remote_path):
         """Generates or retrieves a direct download link."""
-        url = urljoin(self.host, "/api2/share-links/")
+        url = urljoin(self.host, "/api/v2.1/share-links/")
         
         # Payload for creating a link
         payload = {
