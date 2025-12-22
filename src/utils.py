@@ -5,11 +5,13 @@ import os
 import yaml
 
 def setup_logging(log_dir="logs"):
+    log_dir = str(log_dir) # Ensure it's a string if passed as Path
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     
     # Windows console encoding fix
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    if sys.platform == 'win32':
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     
     logging.basicConfig(
         level=logging.INFO,
