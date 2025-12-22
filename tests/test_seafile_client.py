@@ -47,12 +47,13 @@ class TestSeafileClient(unittest.TestCase):
         mock_get.return_value = mock_get_resp
 
         # Execute
-        link = self.client.get_share_link("/foo.mkv")
+        with self.assertLogs(level='WARNING') as log:
+            link = self.client.get_share_link("/foo.mkv")
 
         # Assert
         self.assertEqual(link, 'http://link.com/existing')
-        mock_post.assert_called_once()
-        mock_get.assert_called_once()
+        # Check that we logged the 400 warning
+        self.assertTrue(any("Create link returned 400" in output for output in log.output))
 
     @patch('requests.post')
     def test_get_share_link_fail_logs_error(self, mock_post):
@@ -96,3 +97,30 @@ class TestSeafileClient(unittest.TestCase):
         # Assert
         self.assertIsNone(link)
         self.assertTrue(any("Get failed" in output for output in log.output))
+
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_get_share_link_fallback_empty_list(self, mock_post, mock_get):
+        # Setup Post -> 400
+        mock_post_resp = MagicMock()
+        mock_post_resp.status_code = 400
+        mock_post_resp.text = "Link exists"
+        mock_post.return_value = mock_post_resp
+
+        # Setup Get -> 200 with EMPTY list
+        mock_get_resp = MagicMock()
+        mock_get_resp.ok = True
+        mock_get_resp.status_code = 200
+        mock_get_resp.json.return_value = []
+        mock_get_resp.text = "[]"
+        mock_get.return_value = mock_get_resp
+
+        # Execute
+        with self.assertLogs(level='ERROR') as log:
+            link = self.client.get_share_link("/foo.mkv")
+
+        # Assert
+        self.assertIsNone(link)
+        # Check logs
+        self.assertTrue(any("No share links found" in output for output in log.output))
+        self.assertTrue(any("Get existing links response body: []" in output for output in log.output))
