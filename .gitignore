@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Config & Logs
+config/config.yaml
+logs/*.log
+*.log
+
+# System
+.DS_Store
+Thumbs.db
