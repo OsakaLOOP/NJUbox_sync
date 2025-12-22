@@ -10,6 +10,7 @@ from rclone_wrapper import RcloneWrapper
 def process_file(file_path: Path, config, seafile, rclone):
     local_root = Path(config['local']['root_path'])
     remote_root = config['rclone']['remote_root']
+    library_id = config['seafile']['library_id']
     
     # 1. Path Mapping
     # Ensure file is within our managed library
@@ -22,7 +23,7 @@ def process_file(file_path: Path, config, seafile, rclone):
     # Convert to WebDAV path: "/Videos/Anime/AOT/Ep1.mkv"
     # pathlib handles separators, but for remote WebDAV we usually want forward slashes
     remote_rel_path = rel_path.as_posix()
-    remote_full_path = f"{remote_root}/{remote_rel_path}".replace('//', '/')
+    remote_full_path = f"{library_id}/{remote_root}/{remote_rel_path}".replace('//', '/')
     remote_parent_dir = os.path.dirname(remote_full_path) # os.path is fine for string manipulation here, or could use str manipulation
 
     # 2. Upload
@@ -64,7 +65,7 @@ def main():
 
     # Setup logging with config
     log_level = config.get('log_level', 'INFO')
-    setup_logging(root_dir / "logs", log_level=log_level)
+    setup_logging(str(root_dir / "logs"), log_level=log_level)
 
     # Parse Args
     parser = argparse.ArgumentParser(description="NAS Seafile Offloader")
