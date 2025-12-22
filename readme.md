@@ -42,7 +42,7 @@ graph LR
 
 *   **API Token**: 网页版 -> 设置 -> API Token (用于生成链接).
 *   **Repo ID**: 浏览器进入资料库，URL `/library/` 后面的 UUID.
-*   **Repo name**: 默认为"私人资料库".
+*   **Library name**: 默认为"私人资料库".
 
 #### 2. 配置 Rclone
 
