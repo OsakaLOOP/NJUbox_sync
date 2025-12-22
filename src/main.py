@@ -62,6 +62,19 @@ def process_file(file_path: Path, config, seafile, rclone):
         except OSError as e:
             logging.error(f"Failed to delete local file: {e}")
 
+def process_path_arg(target_path: Path, config, seafile, rclone, video_exts):
+    """
+    Recursively processes a file or directory.
+    """
+    if target_path.is_file():
+        if target_path.suffix.lower() in video_exts:
+            process_file(target_path, config, seafile, rclone)
+    elif target_path.is_dir():
+        for file_path in target_path.rglob('*'):
+            if file_path.is_file() and file_path.suffix.lower() in video_exts:
+                process_file(file_path, config, seafile, rclone)
+
+
 def main():
     # Setup
     root_dir = Path(__file__).resolve().parent.parent
@@ -76,10 +89,8 @@ def main():
 
     # Parse Args
     parser = argparse.ArgumentParser(description="NAS Seafile Offloader")
-    parser.add_argument("path", help="File or Folder path passed by qBittorrent")
+    parser.add_argument("paths", nargs='+', help="File or Folder paths passed by qBittorrent or manual selection")
     args = parser.parse_args()
-    
-    target_path = Path(args.path)
     
     # Init Clients
     seafile = SeafileClient(
@@ -92,24 +103,20 @@ def main():
         config['rclone']['bwlimit']
     )
 
-    logging.info(f"Triggered for: {target_path}")
-
     # Get extensions from config or default
     video_exts = tuple(config.get('local', {}).get('extensions', ['.mp4', '.mkv', '.avi', '.mov']))
     # Ensure they are lower case
     video_exts = tuple(ext.lower() for ext in video_exts)
 
-    try:
-        # Recursive Processing
-        if target_path.is_file():
-            if target_path.suffix.lower() in video_exts:
-                process_file(target_path, config, seafile, rclone)
-        elif target_path.is_dir():
-            for file_path in target_path.rglob('*'):
-                if file_path.is_file() and file_path.suffix.lower() in video_exts:
-                    process_file(file_path, config, seafile, rclone)
-    except Exception as e:
-        logging.exception(f"Critical error during execution: {e}")
+    for path_str in args.paths:
+        target_path = Path(path_str)
+        logging.info(f"Triggered for: {target_path}")
+
+        try:
+            process_path_arg(target_path, config, seafile, rclone, video_exts)
+        except Exception as e:
+            logging.exception(f"Critical error during execution for {target_path}: {e}")
+            # Continue with other paths even if one fails
     
     logging.info("Job execution finished.")
 
