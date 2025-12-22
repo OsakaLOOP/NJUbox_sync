@@ -25,17 +25,36 @@ class SeafileClient:
             
             # If link already exists (400 Bad Request with specific msg), fetch it
             if resp.status_code == 400:
+                logging.debug(f"Create link returned 400. Response: {resp.text}")
                 logging.info(f"Link likely exists for {remote_path}, fetching existing...")
+
                 get_params = {"repo_id": self.repo_id, "path": remote_path}
                 get_resp = requests.get(url, headers=self.headers, params=get_params)
-                get_resp.raise_for_status()
+
+                if not get_resp.ok:
+                    logging.error(f"Failed to fetch existing links. Status: {get_resp.status_code}, Body: {get_resp.text}")
+                    get_resp.raise_for_status()
+
+                links_data = get_resp.json()
+                if not links_data:
+                    logging.error(f"No share links found for {remote_path} despite 400 error.")
+                    return None
+
                 # Return the first link found
-                link = get_resp.json()[0]['link']
+                link = links_data[0]['link']
                 return link
 
-            resp.raise_for_status()
+            if not resp.ok:
+                logging.error(f"Failed to create link. Status: {resp.status_code}, Body: {resp.text}")
+                resp.raise_for_status()
+
             return resp.json()['link']
             
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Seafile API Request Failed: {e}")
+            if e.response is not None:
+                logging.error(f"Error Response Body: {e.response.text}")
+            return None
         except Exception as e:
-            logging.error(f"Seafile API Error: {e}")
+            logging.error(f"Unexpected Seafile Client Error: {e}")
             return None
