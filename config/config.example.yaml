@@ -1,5 +1,8 @@
 # Rename this file to config.yaml to use
 
+# Global Configuration
+log_level: "INFO" # INFO, DEBUG, WARNING, ERROR
+
 # Seafile Configuration
 seafile:
   host: "https://box.nju.edu.cn"
