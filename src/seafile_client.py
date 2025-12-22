@@ -25,7 +25,7 @@ class SeafileClient:
             
             # If link already exists (400 Bad Request with specific msg), fetch it
             if resp.status_code == 400:
-                logging.debug(f"Create link returned 400. Response: {resp.text}")
+                logging.warning(f"Create link returned 400. Response: {resp.text}")
                 logging.info(f"Link likely exists for {remote_path}, fetching existing...")
 
                 get_params = {"repo_id": self.repo_id, "path": remote_path}
@@ -38,6 +38,7 @@ class SeafileClient:
                 links_data = get_resp.json()
                 if not links_data:
                     logging.error(f"No share links found for {remote_path} despite 400 error.")
+                    logging.error(f"Get existing links response body: {get_resp.text}")
                     return None
 
                 # Return the first link found
