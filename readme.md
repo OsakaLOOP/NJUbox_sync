@@ -4,7 +4,7 @@
 
 ⚡ **自动分流**：qBittorrent 下载完成后，自动调用 Rclone 上传至网盘。
 
-🔗 **0流量播放**：通过 Seafile API 生成永久直链，创建 .strm 文件供 Jellyfin/Infuse 直接读取，不消耗家庭上行带宽。
+🔗 **0流量播放**：通过 Seafile API 生成永久直链，创建 .strm 文件供 Jellyfin 等流媒体服务 / VLC 等本地播放器 直接读取，不消耗家庭上行带宽。
 
 📂 **目录映射**：严格保持本地与云端的目录结构一致，完美支持多季番剧刮削。
 
@@ -41,7 +41,8 @@ graph LR
 #### 1. 获取凭证
 
 *   **API Token**: 网页版 -> 设置 -> API Token (用于生成链接).
-*   **Repo ID (资料库ID)**: 浏览器进入资料库，URL `/library/` 后面的 UUID.
+*   **Repo ID**: 浏览器进入资料库，URL `/library/` 后面的 UUID.
+*   **Repo name**: 默认为"私人资料库".
 
 #### 2. 配置 Rclone
 
