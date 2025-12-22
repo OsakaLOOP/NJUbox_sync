@@ -7,7 +7,8 @@ log_level: "INFO" # INFO, DEBUG, WARNING, ERROR
 seafile:
   host: "https://box.nju.edu.cn"
   api_token: "YOUR_SEAFILE_API_TOKEN_HERE"
-  repo_id: "YOUR_REPO_UUID_HERE"
+  repo_name: "YOUR_REPO_NAME_HERE" # Optional if repo_id is provided
+  # repo_id: "YOUR_REPO_UUID_HERE" # Optional if repo_name is provided
 
 # Rclone Configuration
 rclone:

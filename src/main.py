@@ -74,11 +74,17 @@ def main():
     target_path = Path(args.path)
     
     # Init Clients
-    seafile = SeafileClient(
-        config['seafile']['host'],
-        config['seafile']['api_token'],
-        config['seafile']['repo_id']
-    )
+    try:
+        seafile = SeafileClient(
+            config['seafile']['host'],
+            config['seafile']['api_token'],
+            repo_id=config['seafile'].get('repo_id'),
+            repo_name=config['seafile'].get('repo_name')
+        )
+    except Exception as e:
+        logging.critical(f"Failed to initialize Seafile client: {e}")
+        sys.exit(1)
+
     rclone = RcloneWrapper(
         config['rclone']['remote_name'],
         config['rclone']['bwlimit']
