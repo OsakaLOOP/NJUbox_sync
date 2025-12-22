@@ -1,0 +1,30 @@
+# Rename this file to config.yaml to use
+
+# Global Configuration
+log_level: "INFO" # INFO, DEBUG, WARNING, ERROR
+
+# Seafile Configuration
+seafile:
+  host: "https://box.nju.edu.cn"
+  api_token: "YOUR_SEAFILE_API_TOKEN_HERE"
+  repo_id: "YOUR_REPO_UUID_HERE"
+
+# Rclone Configuration
+rclone:
+  remote_name: "NJUbox"  # Must match your 'rclone config'
+  remote_root: "/Bangumi"       # Root folder on the cloud
+  bwlimit: "5M"               # Upload speed limit (e.g., 5M = 5MB/s)
+
+# You have to install and configure rclone for yourself.
+
+# Local Storage Configuration
+local:
+  root_path: "E:\\MediaLibrary"  # Your Local Seeding Archive Root
+  delete_after_upload: false     # Set true to delete local file (NOT recommended for seeding)
+  strm_suffix: " [Stream]"        # Suffix for generated strm files to avoid conflict
+  # Extensions to process
+  extensions:
+    - .mp4
+    - .mkv
+    - .avi
+    - .mov

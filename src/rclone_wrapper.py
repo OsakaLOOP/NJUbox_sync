@@ -14,7 +14,7 @@ class RcloneWrapper:
         """
         # cmd: rclone copy "C:\..." "remote:/dir" --bwlimit 5M --transfers 2 --ignore-existing
         cmd = [
-            "rclone", "copy", local_path,
+            "rclone", "copy", str(local_path),
             f"{self.remote_name}:{remote_dir}",
             "--bwlimit", self.bwlimit,
             "--transfers", "2",
@@ -24,16 +24,29 @@ class RcloneWrapper:
         logging.info(f"Rclone uploading: {local_path} -> {remote_dir}")
 
         # Hide console window on Windows
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         try:
-            result = subprocess.call(cmd, startupinfo=startupinfo)
-            if result == 0:
+            # Use subprocess.run for better control and output capturing if needed
+            result = subprocess.run(
+                cmd,
+                startupinfo=startupinfo,
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode == 0:
                 return True
             else:
-                logging.error(f"Rclone exited with code {result}")
+                logging.error(f"Rclone failed with code {result.returncode}")
+                logging.error(f"Stderr: {result.stderr}")
                 return False
         except FileNotFoundError:
             logging.error("Rclone executable not found in PATH.")
+            return False
+        except Exception as e:
+            logging.error(f"An unexpected error occurred during rclone execution: {e}")
             return False
