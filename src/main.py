@@ -57,17 +57,14 @@ def process_file(file_path: Path, config, seafile, rclone):
 def main():
     # Setup
     root_dir = Path(__file__).resolve().parent.parent
-    setup_logging(root_dir / "logs")
     config_path = root_dir / "config" / "config.yaml"
 
-    if not config_path.exists():
-         # Fallback to verify logic or just fail gracefully
-         logging.error(f"Config file not found at {config_path}")
-         # Attempt to load the example if strictly testing? No, stick to error.
-         # For the user, I'll exit.
-         sys.exit(1)
-
+    # Load config first to get log settings
     config = load_config(str(config_path))
+
+    # Setup logging with config
+    log_level = config.get('log_level', 'INFO')
+    setup_logging(root_dir / "logs", log_level=log_level)
 
     # Parse Args
     parser = argparse.ArgumentParser(description="NAS Seafile Offloader")
@@ -90,7 +87,6 @@ def main():
     logging.info(f"Triggered for: {target_path}")
 
     # Get extensions from config or default
-    # Note: config loading in utils already handles loading, but structure might vary
     video_exts = tuple(config.get('local', {}).get('extensions', ['.mp4', '.mkv', '.avi', '.mov']))
     # Ensure they are lower case
     video_exts = tuple(ext.lower() for ext in video_exts)
