@@ -11,6 +11,9 @@ def process_file(file_path: Path, config, seafile, rclone):
     local_root = Path(config['local']['root_path'])
     remote_root = config['rclone']['remote_root']
     library_id = config['seafile']['library_id']
+    col_path = ""
+    if 'col_path' in config['seafile']:
+        col_path = config['seafile']['col_path']
     
     # 1. Path Mapping
     # Ensure file is within our managed library
@@ -40,8 +43,12 @@ def process_file(file_path: Path, config, seafile, rclone):
     suffix = config['local'].get('strm_suffix', '')
     strm_path = file_path.with_name(f"{file_path.stem}{suffix}.strm")
     
+    
     try:
         with open(strm_path, "w", encoding='utf-8') as f:
+            f.write(f"{link}?dl=1")
+        if col_path:
+            with open(col_path, "w", encoding='utf-8') as f:
             f.write(f"{link}?dl=1")
         logging.info(f"Generated STRM: {strm_path}")
     except Exception as e:

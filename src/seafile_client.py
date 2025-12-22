@@ -16,7 +16,6 @@ class SeafileClient:
         payload = {
             "repo_id": self.repo_id,
             "path": remote_path,
-            "permissions": {"can_download": True}
         }
 
         try:

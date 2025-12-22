@@ -18,7 +18,7 @@ class RcloneWrapper:
             f"{self.remote_name}:{remote_dir}",
             "--bwlimit", self.bwlimit,
             "--transfers", "2",
-            "--ignore-existing" 
+            "--ignore-existing","--progress"
         ]
 
         logging.info(f"Rclone uploading: {local_path} -> {remote_dir}")

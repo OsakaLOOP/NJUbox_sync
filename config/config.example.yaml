@@ -9,6 +9,7 @@ seafile:
   api_token: "YOUR_SEAFILE_API_TOKEN_HERE"
   repo_id: "YOUR_REPO_UUID_HERE"
   library_id: "私人资料库"
+  col_path: "D:\\Stream" # "" for disabled
 
 # Rclone Configuration
 rclone:
