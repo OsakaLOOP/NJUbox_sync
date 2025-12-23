@@ -22,6 +22,7 @@ rclone:
 # Local Storage Configuration
 local:
   root_path: "E:\\MediaLibrary"  # Your Local Seeding Archive Root
+  library_path: "E:\\JellyfinLibrary" # Path for generated strm and subtitle files
   delete_after_upload: false     # Set true to delete local file (NOT recommended for seeding)
   strm_suffix: " [Stream]"        # Suffix for generated strm files to avoid conflict
   # Extensions to process
