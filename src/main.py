@@ -5,14 +5,8 @@ import logging
 import shutil
 from pathlib import Path
 from utils import setup_logging, load_config, parse_filename, disable_quick_edit
-# from seafile_client import SeafileClient
-# from rclone_wrapper import RcloneWrapper
-try:
-    from seafile_client import SeafileClient
-    from rclone_wrapper import RcloneWrapper
-except ImportError:
-    # For testing in sandbox where we might want to inject mocks or if strict dependencies are missing
-    pass
+from seafile_client import SeafileClient
+from rclone_wrapper import RcloneWrapper
 
 def process_file(file_path: Path, config, seafile, rclone):
     local_root = Path(config['local']['root_path'])
