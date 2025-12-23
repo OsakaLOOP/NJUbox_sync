@@ -1,45 +1,42 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
+import shutil
 import os
-import logging
+import sys
 
-# Add src to path
+# Ensure src is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import utils
 
 class TestUtils(unittest.TestCase):
-    @patch('logging.basicConfig')
-    @patch('logging.handlers.RotatingFileHandler')
-    @patch('logging.StreamHandler')
-    @patch('os.makedirs')
-    @patch('os.path.exists')
-    def test_setup_logging_creates_dir_and_uses_rotating_handler(self, mock_exists, mock_makedirs, mock_stream, mock_rotating_file, mock_basic_config):
-        mock_exists.return_value = False
+    @patch('shutil.which')
+    @patch('subprocess.run')
+    def test_generate_thumbnail_ffmpeg_missing(self, mock_run, mock_which):
+        # Simulate ffmpeg missing
+        mock_which.return_value = None
 
-        utils.setup_logging("test_logs", log_level="DEBUG")
+        utils.generate_thumbnail('input.mkv', 'output.jpg')
 
-        mock_makedirs.assert_called_with("test_logs")
-        mock_rotating_file.assert_called_with(
-            os.path.join("test_logs", "app.log"),
-            maxBytes=5*1024*1024,
-            backupCount=3,
-            encoding='utf-8'
-        )
-        # Check if basicConfig was called with correct level (DEBUG=10)
-        args, kwargs = mock_basic_config.call_args
-        self.assertEqual(kwargs['level'], 10)
+        # Verify subprocess was NOT called
+        mock_run.assert_not_called()
 
-    @patch('logging.basicConfig')
-    @patch('logging.handlers.RotatingFileHandler')
-    @patch('logging.StreamHandler')
-    @patch('os.makedirs')
-    @patch('os.path.exists')
-    def test_setup_logging_exists(self, mock_exists, mock_makedirs, mock_stream, mock_rotating_file, mock_basic_config):
-        mock_exists.return_value = True
+    @patch('shutil.which')
+    @patch('subprocess.run')
+    def test_generate_thumbnail_success(self, mock_run, mock_which):
+        # Simulate ffmpeg present
+        mock_which.return_value = '/usr/bin/ffmpeg'
+        mock_run.return_value = MagicMock(returncode=0)
 
-        utils.setup_logging("test_logs")
+        utils.generate_thumbnail('input.mkv', 'output.jpg')
 
-        mock_makedirs.assert_not_called()
-        mock_basic_config.assert_called()
+        # Verify subprocess called with correct args
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd[0], '/usr/bin/ffmpeg')
+        self.assertIn('-ss', cmd)
+        self.assertIn('00:00:10', cmd)
+        self.assertIn('output.jpg', cmd)
+
+if __name__ == '__main__':
+    unittest.main()

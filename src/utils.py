@@ -3,10 +3,44 @@ import logging.handlers
 import sys
 import io
 import os
+import shutil
+import subprocess
 import yaml
 import anitopy
 import ctypes
 import re
+
+def generate_thumbnail(input_path: str, output_path: str):
+    """
+    Generates a thumbnail for the video file using FFmpeg.
+    Takes a frame at 10 seconds.
+    """
+    ffmpeg_cmd = shutil.which('ffmpeg')
+    if not ffmpeg_cmd:
+        logging.warning("FFmpeg not found. Skipping thumbnail generation.")
+        return
+
+    try:
+        # ffmpeg -i input -ss 00:00:10 -vframes 1 output.jpg -y
+        cmd = [
+            ffmpeg_cmd,
+            '-i', str(input_path),
+            '-ss', '00:00:10',
+            '-vframes', '1',
+            str(output_path),
+            '-y'
+        ]
+
+        # Run ffmpeg, suppress output unless error
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        if result.returncode == 0:
+            logging.info(f"Generated Thumbnail: {output_path}")
+        else:
+            logging.error(f"FFmpeg failed: {result.stderr}")
+
+    except Exception as e:
+        logging.error(f"Error generating thumbnail: {e}")
 
 def sanitize_filename(name: str) -> str:
     """
