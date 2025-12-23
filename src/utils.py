@@ -6,6 +6,16 @@ import os
 import yaml
 import anitopy
 import ctypes
+import re
+
+def sanitize_filename(name: str) -> str:
+    """
+    Sanitizes a string to be safe for use as a filename on Windows.
+    Removes: < > : " / \\ | ? *
+    """
+    # Replace illegal characters with underscore or nothing
+    # < > : " / \ | ? *
+    return re.sub(r'[<>:"/\\|?*]', '_', name).strip()
 
 def disable_quick_edit():
     """
@@ -51,7 +61,8 @@ def parse_filename(filename: str) -> dict:
     """
     data = anitopy.parse(filename)
 
-    title = data.get('anime_title', filename) # Fallback to filename if title missing
+    title_raw = data.get('anime_title', filename)
+    title = sanitize_filename(title_raw)
 
     # Handle Season
     season_raw = data.get('anime_season', '1')
