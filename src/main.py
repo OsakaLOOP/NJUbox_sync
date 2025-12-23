@@ -4,7 +4,7 @@ import argparse
 import logging
 import shutil
 from pathlib import Path
-from utils import setup_logging, load_config, parse_filename, disable_quick_edit
+from utils import setup_logging, load_config, parse_filename, disable_quick_edit, generate_thumbnail
 from seafile_client import SeafileClient
 from rclone_wrapper import RcloneWrapper
 
@@ -32,23 +32,26 @@ def process_file(file_path: Path, config, seafile, rclone):
     # Parse filename using anitopy
     meta = parse_filename(file_path.name)
     std_name = meta['full_name']
-    title = meta['title']
-    season = meta['season'] # "01", "02", etc.
 
     # Construct Destination Path: Library / Title / Season XX /
-    dest_dir = library_path / title / f"Season {season}"
+    dest_dir = library_path / meta['title'] / f"Season {meta['season']}"
 
     # 3. Upload
     # Convert to WebDAV path: "/Videos/Anime/AOT/Ep1.mkv"
-    remote_rel_path = rel_path.as_posix()
-    remote_full_path = f"{library_id}/{remote_root}/{remote_rel_path}".replace('//', '/')
-    remote_parent_dir = os.path.dirname(remote_full_path)
+    remote_rel_path = rel_path.as_posix().lstrip('/')
 
-    if not rclone.upload(file_path, remote_parent_dir):
+    # Path for Seafile API (includes library_id)
+    seafile_path = f"{library_id}/{remote_root}/{remote_rel_path}".replace('//', '/')
+
+    # Path for Rclone (excludes library_id)
+    # Using parent directory for rclone destination to match "rclone copy file dest_dir" behavior
+    rclone_dest_dir = os.path.dirname(f"{remote_root}/{remote_rel_path}".replace('//', '/'))
+
+    if not rclone.upload(file_path, rclone_dest_dir):
         return
 
     # 4. Get Link
-    link = seafile.get_share_link(remote_full_path)
+    link = seafile.get_share_link(seafile_path)
     if not link:
         return
 
@@ -68,6 +71,11 @@ def process_file(file_path: Path, config, seafile, rclone):
         logging.info(f"Generated STRM: {strm_path}")
     except Exception as e:
         logging.error(f"Failed to write STRM: {e}")
+
+    # 5a. Generate Thumbnail
+    thumb_filename = f"{std_name}.jpg"
+    thumb_path = dest_dir / thumb_filename
+    generate_thumbnail(file_path, thumb_path)
 
     # 6. Handle Subtitles
     # Look for files with same stem in source dir
