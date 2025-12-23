@@ -4,6 +4,86 @@ import sys
 import io
 import os
 import yaml
+import anitopy
+import ctypes
+
+def disable_quick_edit():
+    """
+    Disables Quick Edit Mode in Windows Command Prompt to prevent
+    pausing execution when clicking in the console.
+    """
+    if sys.platform == 'win32':
+        try:
+            kernel32 = ctypes.windll.kernel32
+            # ENABLE_QUICK_EDIT_MODE = 0x0040
+            # ENABLE_EXTENDED_FLAGS = 0x0080
+            # ENABLE_INSERT_MODE = 0x0020
+            # ENABLE_MOUSE_INPUT = 0x0010
+            # We want to remove QUICK_EDIT and INSERT mode.
+
+            # Get current console mode
+            hStdIn = kernel32.GetStdHandle(-10) # STD_INPUT_HANDLE = -10
+            mode = ctypes.c_ulong()
+            if not kernel32.GetConsoleMode(hStdIn, ctypes.byref(mode)):
+                return
+
+            # Disable Quick Edit (0x0040) and Insert Mode (0x0020)
+            # We must preserve ENABLE_EXTENDED_FLAGS (0x0080) to allow setting these
+            new_mode = mode.value
+            new_mode &= ~0x0040 # turn off quick edit
+            new_mode &= ~0x0020 # turn off insert mode (optional but good)
+            new_mode |= 0x0080  # set extended flags
+
+            kernel32.SetConsoleMode(hStdIn, new_mode)
+        except Exception as e:
+            # Don't let this crash the app
+            print(f"Failed to disable Quick Edit mode: {e}", file=sys.stderr)
+
+def parse_filename(filename: str) -> dict:
+    """
+    Parses a filename using anitopy and returns standardized metadata.
+    Returns a dict with:
+        - title: Series Title
+        - season: Season Number (formatted string "01", "02")
+        - episode: Episode Number (string)
+        - full_name: Standardized Name (e.g. "Title - S01E01")
+        - original_name: The input filename
+    """
+    data = anitopy.parse(filename)
+
+    title = data.get('anime_title', filename) # Fallback to filename if title missing
+
+    # Handle Season
+    season_raw = data.get('anime_season', '1')
+    try:
+        if isinstance(season_raw, list):
+             season_val = int(season_raw[0])
+        else:
+             season_val = int(season_raw)
+        season_str = f"{season_val:02d}"
+    except (ValueError, TypeError):
+        season_str = "01"
+
+    # Handle Episode
+    episode_raw = data.get('episode_number', '')
+    if isinstance(episode_raw, list):
+         episode_raw = episode_raw[0]
+
+    # Construct Standardized Name
+    # Format: "Title - SxxEyy"
+    if episode_raw:
+        std_name = f"{title} - S{season_str}E{episode_raw}"
+    else:
+        # Fallback if no episode number (e.g. movie)
+        std_name = title
+
+    return {
+        'title': title,
+        'season': season_str,
+        'episode': episode_raw,
+        'full_name': std_name,
+        'original_name': filename
+    }
 
 def setup_logging(log_dir="logs", log_level="INFO", max_bytes=5*1024*1024, backup_count=3):
     log_dir = str(log_dir)
