@@ -70,8 +70,8 @@ def process_file(file_path: Path, config, seafile, rclone, anilist_client):
     # Convert to WebDAV path: "/Videos/Anime/AOT/Ep1.mkv"
     remote_rel_path = rel_path.as_posix().lstrip('/')
 
-    # Path for Seafile API (includes library_id)
-    seafile_path = f"{library_id}/{remote_root}/{remote_rel_path}".replace('//', '/')
+    # Path for Seafile API
+    seafile_path = f"{remote_root}/{remote_rel_path}".replace('//', '/')
 
     # Path for Rclone (excludes library_id)
     # Using parent directory for rclone destination to match "rclone copy file dest_dir" behavior

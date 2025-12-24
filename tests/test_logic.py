@@ -27,6 +27,8 @@ class TestPathLogic(unittest.TestCase):
         self.rclone_mock = MagicMock()
         self.rclone_mock.upload.return_value = True
         self.seafile_mock.get_share_link.return_value = "http://seafile/link"
+        self.anilist_mock = MagicMock()
+        self.anilist_mock.search_anime.return_value = None
 
     @patch('main.generate_thumbnail')
     @patch('main.parse_filename')
@@ -48,7 +50,7 @@ class TestPathLogic(unittest.TestCase):
         }
 
         # Run
-        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock)
+        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock)
 
         # Assertions for Rclone Path (Step 1 requirement)
         # Expected: rclone destination should NOT have repo_id
@@ -65,11 +67,11 @@ class TestPathLogic(unittest.TestCase):
         self.assertNotIn('repo-id-123', dest_dir)
 
         # Assertions for Seafile Path
-        # Expected: seafile path SHOULD have repo_id
+        # Expected: seafile path SHOULD NOT have repo_id
         self.seafile_mock.get_share_link.assert_called_once()
         call_arg = self.seafile_mock.get_share_link.call_args[0][0]
 
-        expected_seafile_path = 'repo-id-123/RemoteVideos/Anime/Show/file.mkv'
+        expected_seafile_path = 'RemoteVideos/Anime/Show/file.mkv'
         self.assertEqual(call_arg, expected_seafile_path)
 
     @patch('main.generate_thumbnail')
@@ -88,14 +90,14 @@ class TestPathLogic(unittest.TestCase):
             'original_name': 'Movie.mkv'
         }
 
-        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock)
+        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock)
 
         # Check if thumbnail generation was called with correct path
         mock_gen_thumb.assert_called_once()
         input_arg, output_arg = mock_gen_thumb.call_args[0]
 
         self.assertEqual(input_arg, file_path)
-        self.assertEqual(output_arg, Path('/local/library/Movie/Season 01/Movie.jpg'))
+        self.assertEqual(output_arg, Path('/local/library/Anime/Movie/Season 01/Movie.jpg'))
 
 if __name__ == '__main__':
     unittest.main()
