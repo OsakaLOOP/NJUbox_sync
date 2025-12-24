@@ -29,6 +29,7 @@ class TestPathLogic(unittest.TestCase):
         self.seafile_mock.get_share_link.return_value = "http://seafile/link"
         self.anilist_mock = MagicMock()
         self.anilist_mock.search_anime.return_value = None
+        self.db_mock = MagicMock()
 
     @patch('main.generate_thumbnail')
     @patch('main.parse_filename')
@@ -50,7 +51,7 @@ class TestPathLogic(unittest.TestCase):
         }
 
         # Run
-        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock)
+        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock, self.db_mock)
 
         # Assertions for Rclone Path (Step 1 requirement)
         # Expected: rclone destination should NOT have repo_id
@@ -74,6 +75,9 @@ class TestPathLogic(unittest.TestCase):
         expected_seafile_path = 'RemoteVideos/Anime/Show/file.mkv'
         self.assertEqual(call_arg, expected_seafile_path)
 
+        # Verify DB interaction
+        self.db_mock.upsert_mapping.assert_called_once()
+
     @patch('main.generate_thumbnail')
     @patch('main.parse_filename')
     @patch('pathlib.Path.mkdir')
@@ -90,7 +94,7 @@ class TestPathLogic(unittest.TestCase):
             'original_name': 'Movie.mkv'
         }
 
-        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock)
+        main_module.process_file(file_path, self.config, self.seafile_mock, self.rclone_mock, self.anilist_mock, self.db_mock)
 
         # Check if thumbnail generation was called with correct path
         mock_gen_thumb.assert_called_once()
