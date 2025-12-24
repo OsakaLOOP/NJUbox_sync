@@ -24,13 +24,17 @@ class TestDatabase(unittest.TestCase):
         src = Path("/source/video.mkv")
         strm = Path("/dest/video.strm")
         url = "http://example.com/video.mkv"
+        status = "SUCCESS"
+        info = '{"id": 1}'
 
-        self.db.upsert_mapping(src, strm, url)
+        self.db.upsert_mapping(src, strm, url, status, info)
 
         mapping = self.db.get_mapping(src)
         self.assertIsNotNone(mapping)
         self.assertEqual(mapping['strm_path'], strm.resolve())
         self.assertEqual(mapping['seafile_url'], url)
+        self.assertEqual(mapping['metadata_status'], status)
+        self.assertEqual(mapping['metadata_info'], info)
 
     def test_update_mapping(self):
         src = Path("/source/video.mkv")

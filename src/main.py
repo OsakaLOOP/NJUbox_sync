@@ -3,6 +3,7 @@ import os
 import argparse
 import logging
 import shutil
+import json
 from pathlib import Path
 from utils import setup_logging, load_config, parse_filename, disable_quick_edit, generate_thumbnail, generate_tvshow_nfo, generate_episode_nfo, save_image, sanitize_filename
 from seafile_client import SeafileClient
@@ -75,13 +76,23 @@ def process_file(file_path: Path, config, seafile, rclone, anilist_client, db: V
     if anilist_meta:
         canonical_title = anilist_meta['title']['english'] or anilist_meta['title']['romaji'] or meta['title']
         canonical_title = sanitize_filename(canonical_title)
-
-        # Override title in meta for filename generation if desired,
-        # BUT usually we want to keep the filename structure standardized by anitopy.
-        # However, the folder structure MUST use canonical title.
         series_dir_name = canonical_title
+
+        meta_status = 'SUCCESS'
+        meta_info = json.dumps({
+            'id': anilist_meta.get('id'),
+            'title_en': anilist_meta['title'].get('english'),
+            'title_ro': anilist_meta['title'].get('romaji'),
+            'canonical': canonical_title
+        })
     else:
         series_dir_name = meta['title']
+
+        meta_status = 'FAILED'
+        meta_info = json.dumps({
+            'error': 'Not found',
+            'query': meta['title']
+        })
 
     std_name = meta['full_name']
 
@@ -135,7 +146,7 @@ def process_file(file_path: Path, config, seafile, rclone, anilist_client, db: V
         logging.info(f"Generated STRM: {strm_path}")
 
         # Save mapping to DB
-        db.upsert_mapping(file_path, strm_path, link)
+        db.upsert_mapping(file_path, strm_path, link, meta_status, meta_info)
 
     except Exception as e:
         logging.error(f"Failed to write STRM: {e}")

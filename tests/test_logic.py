@@ -77,6 +77,10 @@ class TestPathLogic(unittest.TestCase):
 
         # Verify DB interaction
         self.db_mock.upsert_mapping.assert_called_once()
+        args, _ = self.db_mock.upsert_mapping.call_args
+        # args: file_path, strm_path, link, status, info
+        self.assertEqual(args[3], 'FAILED') # Because anilist return is None in this test
+        self.assertIn('Not found', args[4])
 
     @patch('main.generate_thumbnail')
     @patch('main.parse_filename')
