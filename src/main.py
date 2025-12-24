@@ -9,11 +9,46 @@ from seafile_client import SeafileClient
 from rclone_wrapper import RcloneWrapper
 from anilist_client import AniListClient
 from migration import migrate_legacy_library
+from database import VideoMappingDB
 
-def process_file(file_path: Path, config, seafile, rclone, anilist_client):
+def prune_mappings(db: VideoMappingDB):
+    """
+    Checks all mappings in the database.
+    If the source file no longer exists, delete the mapping and the generated strm file.
+    """
+    logging.info("Starting Prune Operation...")
+    count = 0
+    # Collect removals first to avoid modifying while iterating
+    to_remove = []
+
+    for source_path_str, strm_path_str in db.get_all_mappings():
+        source_path = Path(source_path_str)
+        strm_path = Path(strm_path_str)
+
+        if not source_path.exists():
+            logging.info(f"Pruning orphaned mapping: {source_path}")
+            to_remove.append(source_path_str)
+
+            # Delete .strm file if it exists
+            if strm_path.exists():
+                try:
+                    strm_path.unlink()
+                    logging.info(f"Deleted orphaned strm: {strm_path}")
+                except OSError as e:
+                    logging.error(f"Failed to delete {strm_path}: {e}")
+
+            # We could also delete thumbnails/subtitles if we tracked them or guessed them
+            # For now, just strm is safe.
+
+    for src in to_remove:
+        db.delete_mapping(src)
+        count += 1
+
+    logging.info(f"Prune finished. Removed {count} orphaned mappings.")
+
+def process_file(file_path: Path, config, seafile, rclone, anilist_client, db: VideoMappingDB):
     local_root = Path(config['local']['root_path'])
     remote_root = config['rclone']['remote_root']
-    library_id = config['seafile']['library_id']
     
     # Check for library_path
     library_path_str = config['local'].get('library_path')
@@ -98,6 +133,10 @@ def process_file(file_path: Path, config, seafile, rclone, anilist_client):
         with open(strm_path, "w", encoding='utf-8') as f:
             f.write(strm_content)
         logging.info(f"Generated STRM: {strm_path}")
+
+        # Save mapping to DB
+        db.upsert_mapping(file_path, strm_path, link)
+
     except Exception as e:
         logging.error(f"Failed to write STRM: {e}")
 
@@ -138,17 +177,17 @@ def process_file(file_path: Path, config, seafile, rclone, anilist_client):
         except OSError as e:
             logging.error(f"Failed to delete local file: {e}")
 
-def process_path_arg(target_path: Path, config, seafile, rclone, anilist_client, video_exts):
+def process_path_arg(target_path: Path, config, seafile, rclone, anilist_client, video_exts, db: VideoMappingDB):
     """
     Recursively processes a file or directory.
     """
     if target_path.is_file():
         if target_path.suffix.lower() in video_exts:
-            process_file(target_path, config, seafile, rclone, anilist_client)
+            process_file(target_path, config, seafile, rclone, anilist_client, db)
     elif target_path.is_dir():
         for file_path in target_path.rglob('*'):
             if file_path.is_file() and file_path.suffix.lower() in video_exts:
-                process_file(file_path, config, seafile, rclone, anilist_client)
+                process_file(file_path, config, seafile, rclone, anilist_client, db)
 
 
 def main():
@@ -166,11 +205,22 @@ def main():
     log_level = config.get('log_level', 'INFO')
     setup_logging(str(root_dir / "logs"), log_level=log_level)
 
+    # Init DB
+    db_path = root_dir / "data" / "video_map.db"
+    if not db_path.parent.exists():
+        db_path.parent.mkdir(parents=True)
+    db = VideoMappingDB(str(db_path))
+
     # Parse Args
     parser = argparse.ArgumentParser(description="NAS Seafile Offloader")
-    parser.add_argument("paths", nargs='+', help="File or Folder paths passed by qBittorrent or manual selection")
+    parser.add_argument("paths", nargs='*', help="File or Folder paths passed by qBittorrent or manual selection")
+    parser.add_argument("--prune", action="store_true", help="Remove orphaned strm files for deleted source files")
     args = parser.parse_args()
     
+    # Handle Prune
+    if args.prune:
+        prune_mappings(db)
+
     # Init Clients
     seafile = SeafileClient(
         config['seafile']['host'],
@@ -204,7 +254,7 @@ def main():
         logging.info(f"Triggered for: {target_path}")
 
         try:
-            process_path_arg(target_path, config, seafile, rclone, anilist_client, video_exts)
+            process_path_arg(target_path, config, seafile, rclone, anilist_client, video_exts, db)
         except Exception as e:
             logging.exception(f"Critical error during execution for {target_path}: {e}")
             # Continue with other paths even if one fails
