@@ -10,3 +10,4 @@ logs/*.log
 # System
 .DS_Store
 Thumbs.db
+data/
