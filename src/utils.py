@@ -36,7 +36,7 @@ def generate_thumbnail(input_path: str, output_path: str):
         ]
 
         # Run ffmpeg, suppress output unless error
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
 
         if result.returncode == 0:
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
